@@ -103,6 +103,11 @@ int main(int argc, char const * argv[])
     }
 
     TFile *input_caf = TFile::Open(argv[2], "read");
+    if (!input_caf || input_caf->IsZombie())
+    {
+        LOG_CRITICAL("CAF file " << argv[2] << " could not be opened or does not exist." << std::endl);
+        return 0;
+    }
     TTree *input_tree = (TTree*)input_caf->Get("cafmaker/cafTree");
     if(!input_tree)
     {

@@ -7,4 +7,4 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 export HDF5_HOME=$SCRIPT_DIR/hdf5_lib/
 
 setup cmake v3_21_4
-setup duneanaobj v03_06_01b -q e26:prof
+setup duneanaobj v03_11_00 -q e26:prof
