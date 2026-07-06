@@ -40,16 +40,68 @@ caf::SRRecoParticle fill_particle(dlp::types::RecoParticle &p, const std::map<in
 {
     p.match_ids.reset(&p.match_ids_handle);
     p.match_overlaps.reset(&p.match_overlaps_handle);
+    p.fragment_ids.reset(&p.fragment_ids_handle);
+    p.ppn_ids.reset(&p.ppn_ids_handle);
+    p.module_ids.reset(&p.module_ids_handle);
 
     caf::SRRecoParticle part;
+    
+    // Core attributes
     part.primary = p.is_primary;
     part.pdg = p.pdg_code;
-    part.E = p.ke; 
-    part.p = caf::SRVector3D(p.momentum[0], p.momentum[1], p.momentum[2]);
+    part.E = p.ke / 1000.0; // MeV -> GeV
+    part.p = caf::SRVector3D(p.momentum[0] / 1000.0, p.momentum[1] / 1000.0, p.momentum[2] / 1000.0); // MeV/c -> GeV/c
     part.start = caf::SRVector3D(p.start_point[0], p.start_point[1], p.start_point[2]);
     part.end = caf::SRVector3D(p.end_point[0], p.end_point[1], p.end_point[2]);
     part.contained = p.is_contained;
-    
+
+    // Generic extensions
+    part.start_dir = caf::SRVector3D(p.start_dir[0], p.start_dir[1], p.start_dir[2]);
+    part.end_dir = caf::SRVector3D(p.end_dir[0], p.end_dir[1], p.end_dir[2]);
+    part.length = p.length;
+
+    // Energy estimators (MeV -> GeV)
+    part.energy_est.calo_ke = p.calo_ke / 1000.0;
+    part.energy_est.csda_ke = p.csda_ke / 1000.0;
+    part.energy_est.mcs_ke = p.mcs_ke / 1000.0;
+    part.energy_est.depositions = p.depositions_sum / 1000.0;
+    part.energy_est.mass = p.mass / 1000.0;
+    part.energy_est.start_dedx = p.start_dedx; // kept in MeV/cm
+
+    for (int i = 0; i < 6; ++i) {
+        part.energy_est.csda_ke_per_pid.push_back(p.csda_ke_per_pid[i] / 1000.0);
+        part.energy_est.mcs_ke_per_pid.push_back(p.mcs_ke_per_pid[i] / 1000.0);
+    }
+
+    // PID probabilities & score arrays
+    part.score = p.pid_scores[static_cast<int>(p.pid)]; // Best PID probability as score
+    for (int i = 0; i < 6; ++i) {
+        part.pid_prob.pid_scores.push_back(p.pid_scores[i]);
+        part.pid_prob.chi2_per_pid.push_back(p.chi2_per_pid[i]);
+    }
+    part.pid_prob.primary_scores.push_back(p.primary_scores[0]);
+    part.pid_prob.primary_scores.push_back(p.primary_scores[1]);
+
+    // Clustering
+    part.cluster.size = p.size;
+    part.cluster.num_fragments = p.num_fragments;
+
+    // DLP-specific metadata
+    part.dlp.pid = static_cast<caf::DLPPid>(p.pid);
+    part.dlp.shape = static_cast<caf::DLPShape>(p.shape);
+    part.dlp.is_valid = p.is_valid;
+    part.dlp.is_cathode_crosser = p.is_cathode_crosser;
+    part.dlp.is_time_contained = p.is_time_contained;
+    part.dlp.start_straightness = p.start_straightness;
+    part.dlp.axial_spread = p.axial_spread;
+    part.dlp.directional_spread = p.directional_spread;
+    part.dlp.cathode_offset = p.cathode_offset;
+    part.dlp.vertex_distance = p.vertex_distance;
+
+    for (size_t i = 0; i < p.fragment_ids.size(); ++i) part.dlp.fragment_ids.push_back(p.fragment_ids[i]);
+    for (size_t i = 0; i < p.ppn_ids.size(); ++i) part.dlp.ppn_ids.push_back(p.ppn_ids[i]);
+    for (size_t i = 0; i < p.module_ids.size(); ++i) part.dlp.module_ids.push_back(p.module_ids[i]);
+
     // Truth matching
     for(size_t i = 0; i < p.match_ids.size(); ++i) {
         caf::TrueParticleID tid;
@@ -65,81 +117,6 @@ caf::SRRecoParticle fill_particle(dlp::types::RecoParticle &p, const std::map<in
         part.truth.push_back(tid);
         part.truthOverlap.push_back(p.match_overlaps[i]);
         LOG_DEBUG("Reco particle matched to truth particle ID " << match_id << " (mapped to ixn " << tid.ixn << ", part " << tid.part << ") with overlap " << p.match_overlaps[i] << std::endl);
-    }
-
-    return part;
-}
-
-caf::SRDLPParticle fill_dlp_detailed_particle(dlp::types::RecoParticle &p, const std::map<int64_t, caf::TrueParticleID>& match_map, uint64_t offset)
-{
-    p.match_ids.reset(&p.match_ids_handle);
-    p.match_overlaps.reset(&p.match_overlaps_handle);
-    p.fragment_ids.reset(&p.fragment_ids_handle);
-    p.ppn_ids.reset(&p.ppn_ids_handle);
-    p.module_ids.reset(&p.module_ids_handle);
-
-    caf::SRDLPParticle part;
-
-    // Core attributes
-    part.id = p.id;
-    part.interaction_id = p.interaction_id;
-    part.pdg_code = p.pdg_code;
-    part.pid = static_cast<caf::DLPPid>(p.pid);
-    part.shape = static_cast<caf::DLPShape>(p.shape);
-    part.is_primary = p.is_primary;
-    part.is_contained = p.is_contained;
-    part.is_valid = p.is_valid;
-    part.is_matched = p.is_matched;
-    part.is_truth = p.is_truth;
-    part.is_cathode_crosser = p.is_cathode_crosser;
-    part.is_time_contained = p.is_time_contained;
-
-    // Energies
-    part.ke = p.ke;
-    part.calo_ke = p.calo_ke;
-    part.csda_ke = p.csda_ke;
-    part.mcs_ke = p.mcs_ke;
-    part.depositions_sum = p.depositions_sum;
-    part.length = p.length;
-    part.mass = p.mass;
-    part.start_dedx = p.start_dedx;
-
-    // Kinematics and Geometry
-    part.p = p.p;
-    part.momentum = caf::SRVector3D(p.momentum[0], p.momentum[1], p.momentum[2]);
-    part.start_point = caf::SRVector3D(p.start_point[0], p.start_point[1], p.start_point[2]);
-    part.end_point = caf::SRVector3D(p.end_point[0], p.end_point[1], p.end_point[2]);
-    part.start_dir = caf::SRVector3D(p.start_dir[0], p.start_dir[1], p.start_dir[2]);
-    part.end_dir = caf::SRVector3D(p.end_dir[0], p.end_dir[1], p.end_dir[2]);
-    part.start_straightness = p.start_straightness;
-    part.axial_spread = p.axial_spread;
-    part.directional_spread = p.directional_spread;
-    part.cathode_offset = p.cathode_offset;
-    part.vertex_distance = p.vertex_distance;
-
-    // Sizes
-    part.size = p.size;
-    part.num_fragments = p.num_fragments;
-
-    // Populate softmax and scores vectors
-    for(int i = 0; i < 6; ++i) {
-        part.pid_scores.push_back(p.pid_scores[i]);
-        part.chi2_per_pid.push_back(p.chi2_per_pid[i]);
-        part.csda_ke_per_pid.push_back(p.csda_ke_per_pid[i]);
-        part.mcs_ke_per_pid.push_back(p.mcs_ke_per_pid[i]);
-    }
-    part.primary_scores.push_back(p.primary_scores[0]);
-    part.primary_scores.push_back(p.primary_scores[1]);
-
-    // Populate buffers
-    for(size_t i = 0; i < p.fragment_ids.size(); ++i) part.fragment_ids.push_back(p.fragment_ids[i]);
-    for(size_t i = 0; i < p.ppn_ids.size(); ++i) part.ppn_ids.push_back(p.ppn_ids[i]);
-    for(size_t i = 0; i < p.module_ids.size(); ++i) part.module_ids.push_back(p.module_ids[i]);
-
-    // Truth matching / overlap buffers
-    for(size_t i = 0; i < p.match_ids.size(); ++i) {
-        part.match_ids.push_back(p.match_ids[i]);
-        part.match_overlaps.push_back(p.match_overlaps[i]);
     }
 
     return part;
@@ -174,7 +151,7 @@ caf::SRTrueInteraction fill_truth_interaction(dlp::types::TruthInteraction &in, 
     return ret;
 }
 
-caf::SRInteraction fill_interaction(dlp::types::RecoInteraction &in, std::vector<caf::SRRecoParticle> &particles, std::vector<caf::SRDLPParticle> &detailed_particles, const std::map<int64_t, int>& match_map, uint64_t offset)
+caf::SRInteraction fill_interaction(dlp::types::RecoInteraction &in, std::vector<caf::SRRecoParticle> &particles, const std::map<int64_t, int>& match_map, uint64_t offset)
 {
     in.particle_ids.reset(&in.particle_ids_handle);
     in.match_ids.reset(&in.match_ids_handle);
@@ -189,11 +166,8 @@ caf::SRInteraction fill_interaction(dlp::types::RecoInteraction &in, std::vector
     for(int64_t id : in.particle_ids) {
         if (id < (int64_t)particles.size())
             ret.part.dlp.push_back(particles.at(id));
-        if (id < (int64_t)detailed_particles.size())
-            ret.part.dlp_detailed.push_back(detailed_particles.at(id));
     }
     ret.part.ndlp = ret.part.dlp.size();
-    ret.part.ndlp_detailed = ret.part.dlp_detailed.size();
 
     // Truth matching
     for(size_t i = 0; i < in.match_ids.size(); ++i) {
@@ -308,10 +282,8 @@ void package_event(caf::StandardRecord * rec, H5::H5File & file, dlp::types::Eve
     std::vector<dlp::types::RecoParticle> reco_particles(get_product<dlp::types::RecoParticle>(file, evt));
     LOG_DEBUG("Found " << reco_particles.size() << " reco particles." << std::endl);
     std::vector<caf::SRRecoParticle> caf_reco_particles;
-    std::vector<caf::SRDLPParticle> caf_reco_particles_detailed;
     for(dlp::types::RecoParticle &p : reco_particles) {
         caf_reco_particles.push_back(fill_particle(p, hdf5_part_to_caf_id, offset));
-        caf_reco_particles_detailed.push_back(fill_dlp_detailed_particle(p, hdf5_part_to_caf_id, offset));
     }
 
     LOG_DEBUG("Getting reco interactions..." << std::endl);
@@ -319,6 +291,6 @@ void package_event(caf::StandardRecord * rec, H5::H5File & file, dlp::types::Eve
     
     rec->common.ixn.dlp.clear();
     for(dlp::types::RecoInteraction &i : reco_interactions)
-        rec->common.ixn.dlp.push_back(fill_interaction(i, caf_reco_particles, caf_reco_particles_detailed, hdf5_ixn_to_caf_idx, offset));
+        rec->common.ixn.dlp.push_back(fill_interaction(i, caf_reco_particles, hdf5_ixn_to_caf_idx, offset));
     rec->common.ixn.ndlp = rec->common.ixn.dlp.size();
 }
