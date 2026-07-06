@@ -65,6 +65,8 @@ caf::SRRecoParticle fill_particle(dlp::types::RecoParticle &p, const std::map<in
     part.energy_est.mass = p.mass / 1000.0;
     part.energy_est.start_dedx = p.start_dedx; // kept in MeV/cm
 
+    const std::vector<int> hypothesis_pdgs = {22, 11, 13, 211, 2212, 321};
+    part.energy_est.ke_pdg = hypothesis_pdgs;
     for (int i = 0; i < 6; ++i) {
         part.energy_est.csda_ke_per_pid.push_back(p.csda_ke_per_pid[i] / 1000.0);
         part.energy_est.mcs_ke_per_pid.push_back(p.mcs_ke_per_pid[i] / 1000.0);
@@ -72,6 +74,8 @@ caf::SRRecoParticle fill_particle(dlp::types::RecoParticle &p, const std::map<in
 
     // PID probabilities & score arrays
     part.score = p.pid_scores[static_cast<int>(p.pid)]; // Best PID probability as score
+    part.pid_prob.pid_pdg = hypothesis_pdgs;
+    part.pid_prob.chi2_pdg = hypothesis_pdgs;
     for (int i = 0; i < 6; ++i) {
         part.pid_prob.pid_scores.push_back(p.pid_scores[i]);
         part.pid_prob.chi2_per_pid.push_back(p.chi2_per_pid[i]);
@@ -83,17 +87,17 @@ caf::SRRecoParticle fill_particle(dlp::types::RecoParticle &p, const std::map<in
     part.cluster.size = p.size;
     part.cluster.num_fragments = p.num_fragments;
 
-    // DLP-specific metadata
-    part.dlp.pid = static_cast<caf::DLPPid>(p.pid);
-    part.dlp.shape = static_cast<caf::DLPShape>(p.shape);
-    part.dlp.is_valid = p.is_valid;
-    part.dlp.is_cathode_crosser = p.is_cathode_crosser;
-    part.dlp.is_time_contained = p.is_time_contained;
-    part.dlp.start_straightness = p.start_straightness;
-    part.dlp.axial_spread = p.axial_spread;
-    part.dlp.directional_spread = p.directional_spread;
-    part.dlp.cathode_offset = p.cathode_offset;
-    part.dlp.vertex_distance = p.vertex_distance;
+    // LArTPC-specific metadata
+    part.lartpc.pid = static_cast<caf::LArTPCPid>(p.pid);
+    part.lartpc.shape = static_cast<caf::LArTPCShape>(p.shape);
+    part.lartpc.is_valid = p.is_valid;
+    part.lartpc.is_cathode_crosser = p.is_cathode_crosser;
+    part.lartpc.is_time_contained = p.is_time_contained;
+    part.lartpc.start_straightness = p.start_straightness;
+    part.lartpc.axial_spread = p.axial_spread;
+    part.lartpc.directional_spread = p.directional_spread;
+    part.lartpc.cathode_offset = p.cathode_offset;
+    part.lartpc.vertex_distance = p.vertex_distance;
 
     // Truth matching
     for(size_t i = 0; i < p.match_ids.size(); ++i) {
