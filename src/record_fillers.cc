@@ -40,9 +40,6 @@ caf::SRRecoParticle fill_particle(dlp::types::RecoParticle &p, const std::map<in
 {
     p.match_ids.reset(&p.match_ids_handle);
     p.match_overlaps.reset(&p.match_overlaps_handle);
-    p.fragment_ids.reset(&p.fragment_ids_handle);
-    p.ppn_ids.reset(&p.ppn_ids_handle);
-    p.module_ids.reset(&p.module_ids_handle);
 
     caf::SRRecoParticle part;
     
@@ -97,10 +94,6 @@ caf::SRRecoParticle fill_particle(dlp::types::RecoParticle &p, const std::map<in
     part.dlp.directional_spread = p.directional_spread;
     part.dlp.cathode_offset = p.cathode_offset;
     part.dlp.vertex_distance = p.vertex_distance;
-
-    for (size_t i = 0; i < p.fragment_ids.size(); ++i) part.dlp.fragment_ids.push_back(p.fragment_ids[i]);
-    for (size_t i = 0; i < p.ppn_ids.size(); ++i) part.dlp.ppn_ids.push_back(p.ppn_ids[i]);
-    for (size_t i = 0; i < p.module_ids.size(); ++i) part.dlp.module_ids.push_back(p.module_ids[i]);
 
     // Truth matching
     for(size_t i = 0; i < p.match_ids.size(); ++i) {
