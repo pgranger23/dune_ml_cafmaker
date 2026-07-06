@@ -1,5 +1,9 @@
 #!/bin/bash
 
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+export LD_LIBRARY_PATH=$SCRIPT_DIR/build/duneanaobj/lib:$SCRIPT_DIR/build/lib:$LD_LIBRARY_PATH
+export ROOT_INCLUDE_PATH=$SCRIPT_DIR/duneanaobj:$ROOT_INCLUDE_PATH
+
 if [ ! "$#" -ge 1 ]; then
     echo "Usage: ./make_caf_data.sh [input_files]"
 fi

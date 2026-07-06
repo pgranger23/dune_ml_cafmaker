@@ -11,8 +11,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 	endif()
 
 
-# Force the old ABI to match common experiment-built libraries (like those in UPS/Spack)
-add_definitions(-D_GLIBCXX_USE_CXX11_ABI=0)
+# C++ ABI is set per-target/directory to match specific dependency requirements (HDF5 vs ROOT)
 
 project(dune_ml_cafmaker)
 
@@ -48,7 +47,13 @@ message(STATUS "HDF5 Found: ${HDF5_FOUND}")
 message(STATUS "HDF5 Include Dirs: ${HDF5_INCLUDE_DIRS}")
 message(STATUS "HDF5 Libraries: ${HDF5_LIBRARIES}")
 
-find_package(duneanaobj REQUIRED)
+# Build local duneanaobj from source
+add_subdirectory(duneanaobj)
+if(TARGET duneanaobj_StandardRecord)
+    add_library(duneanaobj::StandardRecord ALIAS duneanaobj_StandardRecord)
+elseif(TARGET StandardRecord)
+    add_library(duneanaobj::StandardRecord ALIAS StandardRecord)
+endif()
 find_package(ZLIB REQUIRED)
 find_package(ROOT REQUIRED)
 

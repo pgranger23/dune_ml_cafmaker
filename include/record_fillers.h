@@ -23,6 +23,7 @@
 #include "duneanaobj/StandardRecord/StandardRecord.h"
 #include "duneanaobj/StandardRecord/SRInteraction.h"
 #include "duneanaobj/StandardRecord/SRRecoParticle.h"
+#include "duneanaobj/StandardRecord/SRDLPParticle.h"
 #include "duneanaobj/StandardRecord/SRTrueInteraction.h"
 #include "duneanaobj/StandardRecord/SRTrueParticle.h"
 
@@ -45,6 +46,12 @@ caf::SRTrueParticle fill_truth_particle(dlp::types::TruthParticle &p, uint64_t o
 caf::SRRecoParticle fill_particle(dlp::types::RecoParticle &p, const std::map<int64_t, caf::TrueParticleID>& match_map, uint64_t offset=0);
 
 /**
+ * @brief Constructs an instance of the caf::SRDLPParticle class from the data
+ * in the dlp::types::RecoParticle data product.
+ */
+caf::SRDLPParticle fill_dlp_detailed_particle(dlp::types::RecoParticle &p, const std::map<int64_t, caf::TrueParticleID>& match_map, uint64_t offset=0);
+
+/**
  * @brief Constructs an instance of the caf::SRTrueInteraction class from
  * the data in the dlp::types::TruthInteraction data product.
  */
@@ -54,7 +61,7 @@ caf::SRTrueInteraction fill_truth_interaction(dlp::types::TruthInteraction &in, 
  * @brief Constructs an instance of the caf::SRInteraction class from the
  * data in the dlp::types::RecoInteraction data product.
  */
-caf::SRInteraction fill_interaction(dlp::types::RecoInteraction &in, std::vector<caf::SRRecoParticle> &particles, const std::map<int64_t, int>& match_map, uint64_t offset=0);
+caf::SRInteraction fill_interaction(dlp::types::RecoInteraction &in, std::vector<caf::SRRecoParticle> &particles, std::vector<caf::SRDLPParticle> &detailed_particles, const std::map<int64_t, int>& match_map, uint64_t offset=0);
 
 /**
  * @brief Populates the StandardRecord object with the ML reconstruction

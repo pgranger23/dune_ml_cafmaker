@@ -10,10 +10,14 @@
 
 set -euo pipefail
 
-SPINE_DIR="/pnfs/dune/scratch/users/pgranger/spine_processed"
-CAF_DIR="/pnfs/dune/scratch/users/pgranger/cafs_output/fnal/15084/1/001"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+export LD_LIBRARY_PATH=$SCRIPT_DIR/build/duneanaobj/lib:$SCRIPT_DIR/build/lib:${LD_LIBRARY_PATH:-}
+export ROOT_INCLUDE_PATH=$SCRIPT_DIR/duneanaobj:${ROOT_INCLUDE_PATH:-}
+
+SPINE_DIR="/exp/dune/data/users/pgranger/spine_reprocessed/"
+CAF_DIR="/pnfs/dune/scratch/users/pgranger/cafs_output/fnal/17027/1/"
 BINARY="$(dirname "$0")/build/merge_sources_simulation"
-OUTPUT_DIR="${1:-$(dirname "$0")/merged_output}"
+OUTPUT_DIR="${1:-$(dirname "$0")/spine_merged_output}"
 
 if [[ ! -x "$BINARY" ]]; then
     echo "ERROR: merge_sources_simulation not found or not executable at: $BINARY"
@@ -33,7 +37,7 @@ for h5_file in "$SPINE_DIR"/*_larcv_spine.h5; do
     # Strip trailing _larcv_spine.h5 to get the shared base name
     base="${filename%_larcv_spine.h5}"
 
-    caf_file="$CAF_DIR/${base}_caf.root"
+    caf_file=$(find /pnfs/dune/scratch/users/pgranger/cafs_output/fnal/17027/1/ -name "${base}_caf.root")
 
     if [[ ! -f "$caf_file" ]]; then
         echo "SKIP: no matching CAF for $filename"
@@ -46,7 +50,6 @@ for h5_file in "$SPINE_DIR"/*_larcv_spine.h5; do
     echo "Merging: $filename"
     echo "    CAF : $caf_file"
     echo "    OUT : $output_file"
-
     if "$BINARY" "$output_file" "$caf_file" "$h5_file"; then
         ((matched++)) || true
     else
