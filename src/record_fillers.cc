@@ -151,9 +151,8 @@ caf::SRInteraction fill_interaction(dlp::types::RecoInteraction &in, std::vector
     
     for(int64_t id : in.particle_ids) {
         if (id < (int64_t)particles.size())
-            ret.part.recopart.push_back(particles.at(id));
+            ret.part.push_back(particles.at(id));
     }
-    ret.part.nrecopart = ret.part.recopart.size();
 
     // Truth matching
     for(size_t i = 0; i < in.match_ids.size(); ++i) {
