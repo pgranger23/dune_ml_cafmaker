@@ -82,11 +82,7 @@ caf::SRRecoParticle fill_particle(dlp::types::RecoParticle &p, const std::map<in
     part.pid_prob.primary_scores.push_back(p.primary_scores[0]);
     part.pid_prob.primary_scores.push_back(p.primary_scores[1]);
 
-    // SPINE-specific reconstruction details
-    part.spine.is_valid = p.is_valid;
-    part.spine.start_straightness = p.start_straightness;
-    part.spine.axial_spread = p.axial_spread;
-    part.spine.directional_spread = p.directional_spread;
+
 
     // Truth matching
     for(size_t i = 0; i < p.match_ids.size(); ++i) {

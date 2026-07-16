@@ -10,10 +10,10 @@ Following the feedback on the initial schema draft, this proposal defines a clea
 * **Action:** Rename all code occurrences of `dlp`/`DLP` to `spine`/`SPINE` (specifically variables, branches, and class names).
 * **Rationale:** SPINE is the name of the Deep Learning/ML reconstruction stack used in the analysis chain.
 
-### 2. Move Detector-Specific Metrics to `SRPFP`
-* **Action:** Remove TPC drift-specific and cathode-specific metrics (`is_cathode_crosser`, `is_time_contained`, `cathode_offset`) from the generic `SRRecoParticle` class.
-* **Action:** Rework the Far Detector's `SRPFP` class (inside `rec.fd.hd.pandora.pfps` / `rec.fd.vd.pandora.pfps`) to house these metrics, while adding descriptive comments/documentation for all PFP features.
-* **Rationale:** Generic reco particles should not contain TPC-specific variables. Placing them in `SRPFP` puts them under the detector-specific `fd.hd`/`fd.vd` branches of the CAF.
+### 2. Move Detector-Specific Metrics to `SRLArRecoParticle` (Renamed from `SRPFP`)
+* **Action:** Remove TPC drift-specific and cathode-specific metrics (`is_cathode_crosser`, `is_time_contained`, `cathode_offset`) from the generic `SRRecoParticle` class in `common`.
+* **Action:** Merge `SRSpineInfo` into `SRLArRecoParticle` and rename the container vector `pfps` inside `SRFDInt` to `lar_particles`.
+* **Rationale:** Keeping detector-specific or stack-specific reconstruction metrics inside `common` makes the generic particle representation cluttered. Placing them under `SRLArRecoParticle` puts them cleanly under the detector-specific `fd.hd`/`fd.vd` branches of the CAF (e.g. `rec.fd.hd.pandora.lar_particles`).
 
 ### 3. Simplify `SRInteraction::part` (Direct Vector of Particles)
 * **Action:** Completely eliminate the `SRRecoParticlesBranch` wrapper class.
@@ -26,9 +26,9 @@ Following the feedback on the initial schema draft, this proposal defines a clea
 * **Action:** Avoid `std::map<int, SREnergy>` due to a known bug in `gen_srproxy` where the parser crashes when traversing `typedef` internals of STL map templates. Instead, store them as a `std::vector<SRPIDHypothesis>` and provide map-like helper methods (`PIDScore(int pdg)`, `Chi2(int pdg)`, `Energy(int pdg)`) for a clean analyzer interface.
 * **Action:** Keep measured, hypothesis-independent values (`depositions`, `start_dedx`) directly in `SRRecoParticle`.
 
-### 5. Remove `SRClusteringInfo` & Merge with `SRPFP`
+### 5. Remove `SRClusteringInfo` & Merge with `SRLArRecoParticle`
 * **Action:** Remove the `SRClusteringInfo` class entirely from standard record headers.
-* **Action:** Add `size` and `num_fragments` directly to the detector-specific `SRPFP` class.
+* **Action:** Add `size` and `num_fragments` directly to `SRLArRecoParticle`.
 * **Rationale:** Clustering and fragment metrics are highly dependent on the hit/voxelization layout and reconstruction stack, which are detector/reconstruction stack specific features.
 
 ---
@@ -98,17 +98,6 @@ namespace caf
 ```cpp
 namespace caf
 {
-  class SRSpineInfo
-  {
-    public:
-      static constexpr float NaN = std::numeric_limits<float>::signaling_NaN();
-
-      bool  is_valid = false;             ///< Is the SPINE reconstruction valid for this particle
-      float start_straightness = NaN;     ///< Straightness of the track near start
-      float axial_spread = NaN;           ///< Axial voxel spread
-      float directional_spread = NaN;     ///< Directional voxel spread
-  };
-
   class SRRecoParticle
   {
     public:
@@ -130,17 +119,16 @@ namespace caf
 
       // Modular structures
       SRPIDProbability pid_prob;          ///< Detailed PID probabilities and hypothesis energy estimates
-      SRSpineInfo      spine;             ///< SPINE-specific reconstruction details
   };
 }
 ```
 
-### D. Detector-Specific Particle Flow Object (`duneanaobj/StandardRecord/SRPFP.h`)
+### D. Detector-Specific Particle Flow Object (`duneanaobj/StandardRecord/SRLArRecoParticle.h`)
 
 ```cpp
 namespace caf
 {
-  class SRPFP : public SRRecoObjBase
+  class SRLArRecoParticle : public SRRecoObjBase
   {
     public:
       static constexpr float NaN = std::numeric_limits<float>::signaling_NaN();
@@ -186,6 +174,12 @@ namespace caf
       // Clustering and fragment details (Merged from SRClusteringInfo)
       int64_t size = -1;                  ///< Number of hits/voxels/points in the cluster
       int64_t num_fragments = -1;         ///< Number of sub-clusters or fragments
+
+      // SPINE-specific reconstruction details (Merged from SRSpineInfo)
+      bool  is_valid = false;             ///< Is the SPINE reconstruction valid for this particle
+      float start_straightness = NaN;     ///< Straightness of the track near start
+      float axial_spread = NaN;           ///< Axial voxel spread
+      float directional_spread = NaN;     ///< Directional voxel spread
   };
 }
 ```
