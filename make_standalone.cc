@@ -53,8 +53,8 @@ int main(int argc, char const *argv[])
         for(dlp::types::Event &evt : events)
         {
             std::cout << "Processing event " << i_evt++ << "..." << std::endl;
-            rec->common.ixn.dlp.clear();
-            rec->common.ixn.ndlp = 0;
+            rec->common.ixn.spine.clear();
+            rec->common.ixn.nspine = 0;
             rec->mc.nu.clear();
             rec->mc.nnu = 0;
             try

@@ -57,47 +57,36 @@ caf::SRRecoParticle fill_particle(dlp::types::RecoParticle &p, const std::map<in
     part.end_dir = caf::SRVector3D(p.end_dir[0], p.end_dir[1], p.end_dir[2]);
     part.length = p.length;
 
-    // Energy estimators (MeV -> GeV)
-    part.energy_est.calo_ke = p.calo_ke / 1000.0;
-    part.energy_est.csda_ke = p.csda_ke / 1000.0;
-    part.energy_est.mcs_ke = p.mcs_ke / 1000.0;
-    part.energy_est.depositions = p.depositions_sum / 1000.0;
-    part.energy_est.mass = p.mass / 1000.0;
-    part.energy_est.start_dedx = p.start_dedx; // kept in MeV/cm
+    // Measured energy quantities (independent of particle species hypothesis)
+    part.depositions = p.depositions_sum / 1000.0;
+    part.start_dedx = p.start_dedx; // kept in MeV/cm
 
-    const std::vector<int> hypothesis_pdgs = {22, 11, 13, 211, 2212, 321};
-    part.energy_est.ke_pdg = hypothesis_pdgs;
-    for (int i = 0; i < 6; ++i) {
-        part.energy_est.csda_ke_per_pid.push_back(p.csda_ke_per_pid[i] / 1000.0);
-        part.energy_est.mcs_ke_per_pid.push_back(p.mcs_ke_per_pid[i] / 1000.0);
-    }
+    // Energy estimates under the assigned (best) hypothesis
+    part.calo_ke = p.calo_ke / 1000.0;
+    part.csda_ke = p.csda_ke / 1000.0;
+    part.mcs_ke = p.mcs_ke / 1000.0;
 
-    // PID probabilities & score arrays
+    // PID probabilities & hypothesis energy estimates
     part.score = p.pid_scores[static_cast<int>(p.pid)]; // Best PID probability as score
-    part.pid_prob.pid_pdg = hypothesis_pdgs;
-    part.pid_prob.chi2_pdg = hypothesis_pdgs;
+    const std::vector<int> hypothesis_pdgs = {22, 11, 13, 211, 2212, 321};
     for (int i = 0; i < 6; ++i) {
-        part.pid_prob.pid_scores.push_back(p.pid_scores[i]);
-        part.pid_prob.chi2_per_pid.push_back(p.chi2_per_pid[i]);
+        caf::SRPIDHypothesis h;
+        h.pdg = hypothesis_pdgs[i];
+        h.pid_score = p.pid_scores[i];
+        h.chi2 = p.chi2_per_pid[i];
+        h.energy.calo = p.calo_ke / 1000.0;
+        h.energy.csda = p.csda_ke_per_pid[i] / 1000.0;
+        h.energy.mcs = p.mcs_ke_per_pid[i] / 1000.0;
+        part.pid_prob.hyp.push_back(h);
     }
     part.pid_prob.primary_scores.push_back(p.primary_scores[0]);
     part.pid_prob.primary_scores.push_back(p.primary_scores[1]);
 
-    // Clustering
-    part.cluster.size = p.size;
-    part.cluster.num_fragments = p.num_fragments;
-
-    // LArTPC-specific metadata
-    part.lartpc.pid = static_cast<caf::LArTPCPid>(p.pid);
-    part.lartpc.shape = static_cast<caf::LArTPCShape>(p.shape);
-    part.lartpc.is_valid = p.is_valid;
-    part.lartpc.is_cathode_crosser = p.is_cathode_crosser;
-    part.lartpc.is_time_contained = p.is_time_contained;
-    part.lartpc.start_straightness = p.start_straightness;
-    part.lartpc.axial_spread = p.axial_spread;
-    part.lartpc.directional_spread = p.directional_spread;
-    part.lartpc.cathode_offset = p.cathode_offset;
-    part.lartpc.vertex_distance = p.vertex_distance;
+    // SPINE-specific reconstruction details
+    part.spine.is_valid = p.is_valid;
+    part.spine.start_straightness = p.start_straightness;
+    part.spine.axial_spread = p.axial_spread;
+    part.spine.directional_spread = p.directional_spread;
 
     // Truth matching
     for(size_t i = 0; i < p.match_ids.size(); ++i) {
@@ -162,9 +151,9 @@ caf::SRInteraction fill_interaction(dlp::types::RecoInteraction &in, std::vector
     
     for(int64_t id : in.particle_ids) {
         if (id < (int64_t)particles.size())
-            ret.part.dlp.push_back(particles.at(id));
+            ret.part.recopart.push_back(particles.at(id));
     }
-    ret.part.ndlp = ret.part.dlp.size();
+    ret.part.nrecopart = ret.part.recopart.size();
 
     // Truth matching
     for(size_t i = 0; i < in.match_ids.size(); ++i) {
@@ -286,8 +275,8 @@ void package_event(caf::StandardRecord * rec, H5::H5File & file, dlp::types::Eve
     LOG_DEBUG("Getting reco interactions..." << std::endl);
     std::vector<dlp::types::RecoInteraction> reco_interactions(get_product<dlp::types::RecoInteraction>(file, evt));
     
-    rec->common.ixn.dlp.clear();
+    rec->common.ixn.spine.clear();
     for(dlp::types::RecoInteraction &i : reco_interactions)
-        rec->common.ixn.dlp.push_back(fill_interaction(i, caf_reco_particles, hdf5_ixn_to_caf_idx, offset));
-    rec->common.ixn.ndlp = rec->common.ixn.dlp.size();
+        rec->common.ixn.spine.push_back(fill_interaction(i, caf_reco_particles, hdf5_ixn_to_caf_idx, offset));
+    rec->common.ixn.nspine = rec->common.ixn.spine.size();
 }

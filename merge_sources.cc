@@ -124,8 +124,8 @@ int main(int argc, char const * argv[])
     for(size_t n(0); n < input_tree->GetEntries(); ++n)
     {
         input_tree->GetEntry(n);
-        rec->common.ixn.dlp.clear();
-        rec->common.ixn.ndlp = 0;
+        rec->common.ixn.spine.clear();
+        rec->common.ixn.nspine = 0;
 
         index_t index = get_run_info(rec);
         if(event_map.find(index) != event_map.end())
