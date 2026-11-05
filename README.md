@@ -12,10 +12,10 @@ The package has two main requirements:
 * `sbnanaobj` (must have ML variables implemented in `StandardRecord`)
 
 ### Building `spine-reader`
-Set up the HDF5 library from UPS (the C++ API of the product is not used), then build and install `spine-reader`:
+Set up the HDF5 library from UPS (the C++ API of the product is not used), then build and install a release of `spine-reader` (v0.1.0, the first one; `CMakeLists.txt` accepts any 0.1.z):
 
     setup hdf5 v1_12_2b -q e26:prof
-    git clone https://github.com/DeepLearnPhysics/spine-reader.git
+    git clone --branch v0.1.0 https://github.com/DeepLearnPhysics/spine-reader.git
     cmake -S spine-reader -B spine-reader-build -DHDF5_ROOT=$HDF5_FQ_DIR -DCMAKE_INSTALL_PREFIX=$PWD/spine-reader-install -DSPINE_READER_BUILD_TESTS=OFF
     cmake --build spine-reader-build -j8 && cmake --install spine-reader-build
 
