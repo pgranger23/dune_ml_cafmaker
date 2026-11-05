@@ -70,6 +70,9 @@ int main(int argc, char const *argv[])
             std::cerr << e.what() << std::endl;
             return 1;
         }
+        // spine-reader only reports the model fields the file lacks (they keep SPINE's
+        // defaults, which is what reaches the CAF): print the report so that it is in the log.
+        std::cout << inputs.back()->schema_report().summary() << std::flush;
     }
 
     /**

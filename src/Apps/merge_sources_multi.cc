@@ -121,6 +121,11 @@ int main(int argc, char const * argv[])
         std::cerr << e.what() << std::endl;
         return 1;
     }
+    // spine-reader only reports the model fields a file lacks (they keep SPINE's
+    // defaults, which is what reaches the CAF): print each file's report so that it is in the log.
+    for(std::size_t f(0); f < input_h5->num_files(); ++f)
+        std::cout << input_h5->schema_report(f).summary();
+    std::cout << std::flush;
 
     /**
      * @brief Configure the output CAF file.
